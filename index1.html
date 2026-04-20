@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>متتبع الدوام والأوف</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --duty: #00c9a7;
+    --off: #f7a44a;
+    --absent: #e05c7a;
+    --bg: #0a0f1e;
+    --card: #111827;
+    --card2: #1a2235;
+    --border: #1e2d45;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --duty-soft: rgba(0,201,167,0.12);
+    --off-soft: rgba(247,164,74,0.12);
+    --absent-soft: rgba(224,92,122,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 20% 20%, rgba(0,201,167,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(247,164,74,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header { text-align: center; margin-bottom: 32px; }
+  header h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--duty), var(--off));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+  }
+  header p { color: var(--muted); font-size: 0.9rem; }
+
+  /* ===== COUNTDOWN ===== */
+  .countdown-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .countdown-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 18px 14px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .countdown-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .countdown-card.duty::before { background: var(--duty); }
+  .countdown-card.off::before { background: var(--off); }
+  .countdown-card.absent::before { background: var(--absent); }
+
+  .countdown-card .label { font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .countdown-card .big-num { font-size: 2.6rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+  .countdown-card.duty .big-num { color: var(--duty); }
+  .countdown-card.off .big-num { color: var(--off); }
+  .countdown-card.absent .big-num { color: var(--absent); }
+  .countdown-card .sub { font-size: 0.7rem; color: var(--muted); }
+
+  .ring-wrap { display: flex; justify-content: center; margin-bottom: 6px; }
+  .ring-svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+  .ring-progress { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+  .ring-duty { stroke: var(--duty); }
+  .ring-off { stroke: var(--off); }
+  .ring-absent { stroke: var(--absent); }
+
+  .limit-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .limit-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .duty-fill { background: var(--duty); }
+  .off-fill { background: var(--off); }
+  .absent-fill { background: var(--absent); }
+  .over-limit { background: #e74c3c !important; }
+
+  /* ===== ACTIVE BANNER ===== */
+  .active-banner {
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+  .active-banner.duty-active { border-color: var(--duty); background: var(--duty-soft); }
+  .active-banner.off-active { border-color: var(--off); background: var(--off-soft); }
+  .active-banner.absent-active { border-color: var(--absent); background: var(--absent-soft); }
+
+  .active-info { display: flex; align-items: center; gap: 10px; }
+  .active-icon { font-size: 1.4rem; }
+  .active-text .a-title { font-size: 0.85rem; font-weight: 700; }
+  .active-text .a-sub { font-size: 0.72rem; }
+  .active-text .a-sub.duty { color: var(--duty); }
+  .active-text .a-sub.off { color: var(--off); }
+  .active-text .a-sub.absent { color: var(--absent); }
+
+  .active-counter { text-align: center; }
+  .active-days { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+  .active-days.duty { color: var(--duty); }
+  .active-days.off { color: var(--off); }
+  .active-days.absent { color: var(--absent); }
+  .active-days-label { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+
+  /* ===== TOTALS ===== */
+  .totals-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .total-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .total-card .t-label { font-size: 0.68rem; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+  .total-card .t-num { font-size: 1.5rem; font-weight: 900; }
+  .total-card.duty-card .t-num { color: var(--duty); }
+  .total-card.off-card .t-num { color: var(--off); }
+  .total-card.absent-card .t-num { color: var(--absent); }
+
+  /* ===== SECTION TITLE ===== */
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ===== CALENDAR ===== */
+  .year-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .month-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .month-name { font-size: 0.8rem; font-weight: 700; color: var(--muted); margin-bottom: 10px; text-align: center; }
+  .days-row { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+
+  .day-dot {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--card2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .day-dot.duty-day { background: var(--duty-soft); border-color: var(--duty); color: var(--duty); }
+  .day-dot.off-day { background: var(--off-soft); border-color: var(--off); color: var(--off); }
+  .day-dot.absent-day { background: var(--absent-soft); border-color: var(--absent); color: var(--absent); }
+  .day-dot.today-dot { box-shadow: 0 0 0 2px white; font-weight: 700; }
+
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .day-dot.live-dot { animation: pulse-dot 1.8s infinite; }
+
+  /* ===== LEGEND ===== */
+  .legend { display: flex; gap: 14px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--muted); }
+  .legend-dot { width: 11px; height: 11px; border-radius: 3px; }
+
+  /* ===== FORM ===== */
+  .add-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .form-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card2);
+    color: var(--muted);
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active-tab { color: #000; border-color: transparent; }
+  .tab-btn.tab-duty.active-tab { background: var(--duty); }
+  .tab-btn.tab-off.active-tab { background: var(--off); }
+  .tab-btn.tab-absent.active-tab { background: var(--absent); }
+
+  .form-row {
+    display: grid;
+    gap: 12px;
+    align-items: end;
+  }
+
+  /* open entry: just start date */
+  .form-row.open-mode { grid-template-columns: 1fr auto; }
+  /* closed / past entry: start + end */
+  .form-row.closed-mode { grid-template-columns: 1fr 1fr auto; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.73rem; font-weight: 600; color: var(--muted); }
+
+  .form-group input,
+  .form-group select {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+    width: 100%;
+  }
+  .form-group input:focus { border-color: var(--duty); }
+
+  /* mode toggle */
+  .mode-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .mode-toggle label { font-size: 0.75rem; color: var(--muted); font-weight: 600; }
+  .mode-toggle .toggle-wrap { display: flex; gap: 6px; }
+  .mode-btn {
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card2);
+    color: var(--muted);
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-btn.active { background: #2a3a50; color: var(--text); border-color: #3a4f6a; }
+
+  .btn-add {
+    background: linear-gradient(135deg, var(--duty), #00a88d);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+    height: 42px;
+  }
+  .btn-add:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-add:active { transform: translateY(0); }
+
+  .form-hint { font-size: 0.68rem; color: var(--muted); margin-top: 10px; }
+
+  /* ===== ENTRIES ===== */
+  .entries-list {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .entries-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .entry-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .entry-item:last-child { border-bottom: none; }
+  .entry-item:hover { background: var(--card2); }
+  .entry-item.open-duty { border-right: 3px solid var(--duty); }
+  .entry-item.open-off { border-right: 3px solid var(--off); }
+  .entry-item.open-absent { border-right: 3px solid var(--absent); }
+
+  .entry-left { display: flex; align-items: center; gap: 10px; }
+  .entry-badge { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; }
+  .entry-badge.duty { background: var(--duty-soft); }
+  .entry-badge.off { background: var(--off-soft); }
+  .entry-badge.absent { background: var(--absent-soft); }
+
+  .entry-info .e-date { font-size: 0.82rem; font-weight: 600; }
+  .entry-info .e-type { font-size: 0.68rem; font-weight: 600; }
+  .entry-info .e-type.duty { color: var(--duty); }
+  .entry-info .e-type.off { color: var(--off); }
+  .entry-info .e-type.absent { color: var(--absent); }
+
+  .entry-right { display: flex; align-items: center; gap: 7px; }
+  .entry-days { font-size: 1.05rem; font-weight: 700; min-width: 26px; text-align: center; }
+  .entry-days.duty { color: var(--duty); }
+  .entry-days.off { color: var(--off); }
+  .entry-days.absent { color: var(--absent); }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  .live-badge {
+    font-size: 0.6rem; font-weight: 700;
+    padding: 2px 7px; border-radius: 20px;
+    animation: blink 1.5s infinite;
+  }
+  .live-badge.duty { background: var(--duty-soft); color: var(--duty); border: 1px solid var(--duty); }
+  .live-badge.off { background: var(--off-soft); color: var(--off); border: 1px solid var(--off); }
+  .live-badge.absent { background: var(--absent-soft); color: var(--absent); border: 1px solid var(--absent); }
+
+  .btn-end {
+    background: none; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 8px;
+    padding: 4px 10px; cursor: pointer;
+    font-family: 'Cairo', sans-serif; font-size: 0.68rem; font-weight: 600;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-end:hover { border-color: var(--duty); color: var(--duty); background: var(--duty-soft); }
+
+  .btn-del {
+    background: none; border: 1px solid #2a3a50;
+    color: var(--muted); border-radius: 8px;
+    width: 28px; height: 28px; cursor: pointer;
+    font-size: 0.75rem; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-del:hover { border-color: #e74c3c; color: #e74c3c; background: rgba(231,76,60,0.1); }
+
+  .empty-state { text-align: center; padding: 36px 20px; color: var(--muted); }
+  .empty-state .e-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .empty-state p { font-size: 0.85rem; }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 20px;
+    font-size: 0.85rem; font-weight: 600;
+    transition: transform 0.3s ease; z-index: 9999; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--duty); color: var(--duty); }
+  .toast.error { border-color: #e74c3c; color: #e74c3c; }
+  .toast.warn { border-color: var(--off); color: var(--off); }
+
+  @media (max-width: 600px) {
+    .countdown-grid { grid-template-columns: 1fr 1fr; }
+    .countdown-card.absent { grid-column: 1 / -1; }
+    .totals-grid { grid-template-columns: repeat(3, 1fr); }
+    .year-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-row.closed-mode { grid-template-columns: 1fr 1fr; }
+    .form-row.closed-mode .btn-add { grid-column: 1 / -1; }
+    .form-row.open-mode { grid-template-columns: 1fr; }
+    .form-row.open-mode .btn-add { width: 100%; }
+    header h1 { font-size: 1.5rem; }
+    .countdown-card .big-num { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>⏱ متتبع الدوام والأوف</h1>
+    <p>تتبع فترات الدوام والإجازات والغياب طوال العام</p>
+  </header>
+
+  <!-- Countdown -->
+  <div class="countdown-grid">
+    <div class="countdown-card duty">
+      <div class="label">📅 متبقي دوام</div>
+      <div class="ring-wrap">
+        <svg class="ring-svg" width="72" height="72" viewBox="0 0 72 72">
+          <circle class="ring-bg" cx="36" cy="36" r="30"/>
+          <circle class="ring-progress ring-duty" id="dutyRing" cx="36" cy="36" r="30"
+            stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+        </svg>
+      </div>
+      <div class="big-num" id="dutyCountdown">42</div>
+      <div class="sub">من أصل <b>42</b> يوم</div>
+      <div class="limit-bar"><div class="limit-fill duty-fill" id="dutyBar" style="width:0%"></div></div>
+    </div>
+    <div class="countdown-card off">
+      <div class="label">🏖 متبقي أوف</div>
+      <div class="ring-wrap">
+        <svg class="ring-svg" width="72" height="72" viewBox="0 0 72 72">
+          <circle class="ring-bg" cx="36" cy="36" r="30"/>
+          <circle class="ring-progress ring-off" id="offRing" cx="36" cy="36" r="30"
+            stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+        </svg>
+      </div>
+      <div class="big-num" id="offCountdown">21</div>
+      <div class="sub">من أصل <b>21</b> يوم</div>
+      <div class="limit-bar"><div class="limit-fill off-fill" id="offBar" style="width:0%"></div></div>
+    </div>
+    <div class="countdown-card absent">
+      <div class="label">🚫 إجمالي غياب</div>
+      <div class="ring-wrap">
+        <svg class="ring-svg" width="72" height="72" viewBox="0 0 72 72">
+          <circle class="ring-bg" cx="36" cy="36" r="30"/>
+          <circle class="ring-progress ring-absent" id="absentRing" cx="36" cy="36" r="30"
+            stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+        </svg>
+      </div>
+      <div class="big-num" id="absentTotal">0</div>
+      <div class="sub">يوم غياب</div>
+      <div class="limit-bar"><div class="limit-fill absent-fill" id="absentBar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- Active Banner -->
+  <div class="active-banner" id="activeBanner" style="display:none">
+    <div class="active-info">
+      <div class="active-icon" id="activeIcon">🏢</div>
+      <div class="active-text">
+        <div class="a-title" id="activeTitle">—</div>
+        <div class="a-sub" id="activeSub">—</div>
+      </div>
+    </div>
+    <div class="active-counter">
+      <div class="active-days" id="activeDaysNum">0</div>
+      <div class="active-days-label">يوم حتى الآن</div>
+    </div>
+  </div>
+
+  <!-- Totals -->
+  <div class="totals-grid">
+    <div class="total-card duty-card">
+      <div class="t-label">إجمالي الدوام</div>
+      <div class="t-num" id="totalDuty">0</div>
+    </div>
+    <div class="total-card off-card">
+      <div class="t-label">إجمالي الأوف</div>
+      <div class="t-num" id="totalOff">0</div>
+    </div>
+    <div class="total-card absent-card">
+      <div class="t-label">إجمالي الغياب</div>
+      <div class="t-num" id="totalAbsent">0</div>
+    </div>
+  </div>
+
+  <!-- Add Entry -->
+  <div class="add-section">
+    <div class="section-title">➕ إضافة فترة</div>
+
+    <!-- Type tabs -->
+    <div class="form-tabs">
+      <button class="tab-btn tab-duty active-tab" onclick="setType('duty',this)">🏢 دوام</button>
+      <button class="tab-btn tab-off" onclick="setType('off',this)">🏖 أوف</button>
+      <button class="tab-btn tab-absent" onclick="setType('absent',this)">🚫 غياب</button>
+    </div>
+
+    <!-- Mode toggle -->
+    <div class="mode-toggle">
+      <label>نوع الإضافة:</label>
+      <div class="toggle-wrap">
+        <button class="mode-btn active" id="modeOpenBtn" onclick="setMode('open')">🔴 جارٍ حتى الآن</button>
+        <button class="mode-btn" id="modeClosedBtn" onclick="setMode('closed')">✅ سابق (محدد الأيام)</button>
+      </div>
+    </div>
+
+    <!-- Open mode: start only -->
+    <div id="formOpen">
+      <div class="form-row open-mode">
+        <div class="form-group">
+          <label>تاريخ البداية</label>
+          <input type="date" id="startDateOpen">
+        </div>
+        <button class="btn-add" onclick="addEntry()">إضافة</button>
+      </div>
+      <div class="form-hint">💡 الأيام تُحسب تلقائياً حتى اليوم الحالي. اضغط "إنهاء" عند انتهاء الفترة.</div>
+    </div>
+
+    <!-- Closed mode: start + end -->
+    <div id="formClosed" style="display:none">
+      <div class="form-row closed-mode">
+        <div class="form-group">
+          <label>تاريخ البداية</label>
+          <input type="date" id="startDateClosed">
+        </div>
+        <div class="form-group">
+          <label>تاريخ النهاية</label>
+          <input type="date" id="endDateClosed">
+        </div>
+        <button class="btn-add" onclick="addEntry()">إضافة</button>
+      </div>
+      <div class="form-hint">💡 لإضافة فترات سابقة منتهية بتواريخ محددة.</div>
+    </div>
+  </div>
+
+  <!-- Year Overview -->
+  <div class="section-title">🗓 نظرة عامة على السنة <span id="yearLabel"></span></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--duty)"></div>دوام</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--off)"></div>أوف</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--absent)"></div>غياب</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>بدون</div>
+  </div>
+  <div class="year-grid" id="yearGrid"></div>
+
+  <!-- Entries List -->
+  <div class="section-title">📋 سجل الفترات</div>
+  <div class="entries-list">
+    <div class="entries-header">الفترات المسجلة</div>
+    <div id="entriesList"></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DUTY_LIMIT = 42;
+const OFF_LIMIT = 21;
+const ABSENT_MAX = 30; // for ring display only
+const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const TYPE_ICONS = { duty: '🏢', off: '🏖', absent: '🚫' };
+const TYPE_AR = { duty: 'دوام', off: 'أوف', absent: 'غياب' };
+
+let entries = JSON.parse(localStorage.getItem('workEntriesV4') || '[]');
+let currentType = 'duty';
+let currentMode = 'open'; // 'open' | 'closed'
+
+const YEAR = new Date().getFullYear();
+document.getElementById('yearLabel').textContent = YEAR;
+
+// default dates
+const todayStr = getToday().toISOString().split('T')[0];
+document.getElementById('startDateOpen').value = todayStr;
+document.getElementById('startDateClosed').value = todayStr;
+document.getElementById('endDateClosed').value = todayStr;
+
+function getToday() {
+  const d = new Date(); d.setHours(0,0,0,0); return d;
+}
+
+function calcDays(entry) {
+  const s = new Date(entry.start); s.setHours(0,0,0,0);
+  const e = entry.end ? new Date(entry.end) : getToday(); e.setHours(0,0,0,0);
+  if (e < s) return 1;
+  return Math.round((e - s) / 86400000) + 1;
+}
+
+function setType(type, el) {
+  currentType = type;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+  el.classList.add('active-tab');
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('formOpen').style.display = mode === 'open' ? '' : 'none';
+  document.getElementById('formClosed').style.display = mode === 'closed' ? '' : 'none';
+  document.getElementById('modeOpenBtn').classList.toggle('active', mode === 'open');
+  document.getElementById('modeClosedBtn').classList.toggle('active', mode === 'closed');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 2800);
+}
+
+function addEntry() {
+  const today = getToday();
+
+  if (currentMode === 'open') {
+    const start = document.getElementById('startDateOpen').value;
+    if (!start) { showToast('اختر تاريخ البداية', 'error'); return; }
+    const startD = new Date(start); startD.setHours(0,0,0,0);
+    if (startD > today) { showToast('لا يمكن اختيار تاريخ مستقبلي', 'error'); return; }
+
+    // Only block open entry if same type is already open
+    const openSameType = entries.find(e => !e.end && e.type === currentType);
+    if (openSameType) {
+      showToast(`يوجد ${TYPE_AR[currentType]} مفتوح، أنهِه أولاً`, 'error');
+      return;
+    }
+
+    entries.push({ id: Date.now(), start, end: null, type: currentType });
+    save(); render();
+    showToast(`بدأت فترة ${TYPE_AR[currentType]} من ${formatDate(start)} ✓`);
+
+  } else {
+    // closed / past
+    const start = document.getElementById('startDateClosed').value;
+    const end = document.getElementById('endDateClosed').value;
+    if (!start || !end) { showToast('اختر تاريخ البداية والنهاية', 'error'); return; }
+    const startD = new Date(start); startD.setHours(0,0,0,0);
+    const endD = new Date(end); endD.setHours(0,0,0,0);
+    if (endD < startD) { showToast('تاريخ النهاية قبل البداية!', 'error'); return; }
+
+    const days = Math.round((endD - startD) / 86400000) + 1;
+    entries.push({ id: Date.now(), start, end, type: currentType });
+    save(); render();
+    showToast(`تمت الإضافة: ${days} يوم ${TYPE_AR[currentType]} ✓`);
+  }
+}
+
+function endEntry(id) {
+  const e = entries.find(e => e.id === id);
+  if (!e) return;
+  e.end = getToday().toISOString().split('T')[0];
+  save(); render();
+  showToast(`انتهت الفترة • ${calcDays(e)} يوم`);
+}
+
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  save(); render();
+  showToast('تم الحذف', 'error');
+}
+
+function save() {
+  localStorage.setItem('workEntriesV4', JSON.stringify(entries));
+}
+
+function getTotals() {
+  let duty = 0, off = 0, absent = 0;
+  entries.forEach(e => {
+    const d = calcDays(e);
+    if (e.type === 'duty') duty += d;
+    else if (e.type === 'off') off += d;
+    else absent += d;
+  });
+  return { duty, off, absent };
+}
+
+function getDayType(year, month, day) {
+  const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  for (const e of entries) {
+    const s = new Date(e.start); s.setHours(0,0,0,0);
+    const en = e.end ? new Date(e.end) : getToday(); en.setHours(0,0,0,0);
+    if (d >= s && d <= en) return e.type;
+  }
+  return null;
+}
+
+function render() {
+  const today = getToday();
+  const { duty, off, absent } = getTotals();
+  const dutyLeft = Math.max(0, DUTY_LIMIT - duty);
+  const offLeft = Math.max(0, OFF_LIMIT - off);
+
+  document.getElementById('dutyCountdown').textContent = dutyLeft;
+  document.getElementById('offCountdown').textContent = offLeft;
+  document.getElementById('absentTotal').textContent = absent;
+  document.getElementById('totalDuty').textContent = duty;
+  document.getElementById('totalOff').textContent = off;
+  document.getElementById('totalAbsent').textContent = absent;
+
+  const circ = 188.5;
+  const setBar = (barId, ringId, val, max, cls) => {
+    const pct = Math.min(100, (val / max) * 100);
+    document.getElementById(barId).style.width = pct + '%';
+    document.getElementById(barId).className = `limit-fill ${cls}` + (val > max ? ' over-limit' : '');
+    document.getElementById(ringId).style.strokeDashoffset = circ - Math.min(1, val/max)*circ;
+  };
+  setBar('dutyBar','dutyRing', duty, DUTY_LIMIT, 'duty-fill');
+  setBar('offBar','offRing', off, OFF_LIMIT, 'off-fill');
+  setBar('absentBar','absentRing', absent, ABSENT_MAX, 'absent-fill');
+
+  // Active banner — show any open entry
+  const active = entries.find(e => !e.end);
+  const banner = document.getElementById('activeBanner');
+  if (active) {
+    const days = calcDays(active);
+    banner.style.display = 'flex';
+    banner.className = `active-banner ${active.type}-active`;
+    document.getElementById('activeIcon').textContent = TYPE_ICONS[active.type];
+    document.getElementById('activeTitle').textContent =
+      active.type === 'duty' ? 'دوام جارٍ الآن' :
+      active.type === 'off'  ? 'أوف جارٍ الآن'  : 'غياب جارٍ الآن';
+    const sub = document.getElementById('activeSub');
+    sub.textContent = `بدأ في ${formatDate(active.start)}`;
+    sub.className = `a-sub ${active.type}`;
+    const num = document.getElementById('activeDaysNum');
+    num.textContent = days;
+    num.className = `active-days ${active.type}`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // Year grid
+  const grid = document.getElementById('yearGrid');
+  grid.innerHTML = '';
+  for (let m = 0; m < 12; m++) {
+    const daysInMonth = new Date(YEAR, m+1, 0).getDate();
+    const block = document.createElement('div');
+    block.className = 'month-block';
+    const row = document.createElement('div');
+    row.className = 'days-row';
+    block.innerHTML = `<div class="month-name">${MONTHS_AR[m]}</div>`;
+    block.appendChild(row);
+    grid.appendChild(block);
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dot = document.createElement('div');
+      dot.className = 'day-dot';
+      dot.textContent = d;
+      const type = getDayType(YEAR, m, d);
+      if (type) dot.classList.add(type + '-day');
+      const isToday = today.getMonth()===m && today.getDate()===d;
+      if (isToday) dot.classList.add('today-dot');
+      if (isToday && active) dot.classList.add('live-dot');
+      dot.title = `${d} ${MONTHS_AR[m]}`;
+      row.appendChild(dot);
+    }
+  }
+
+  // Entries list
+  const list = document.getElementById('entriesList');
+  if (entries.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="e-icon">📭</div><p>لا توجد فترات مسجلة بعد</p></div>`;
+    return;
+  }
+
+  const sorted = [...entries].sort((a,b) => new Date(b.start)-new Date(a.start));
+  list.innerHTML = sorted.map(e => {
+    const days = calcDays(e);
+    const isOpen = !e.end;
+    return `
+    <div class="entry-item ${isOpen ? 'open-'+e.type : ''}">
+      <div class="entry-left">
+        <div class="entry-badge ${e.type}">${TYPE_ICONS[e.type]}</div>
+        <div class="entry-info">
+          <div class="e-date">
+            ${formatDate(e.start)}
+            ${isOpen
+              ? `<span style="color:var(--muted);font-size:0.72rem"> ← جارٍ حتى الآن</span>`
+              : `<span style="color:var(--muted)"> → </span>${formatDate(e.end)}`}
+          </div>
+          <div class="e-type ${e.type}">${TYPE_AR[e.type]} • ${days} يوم</div>
+        </div>
+      </div>
+      <div class="entry-right">
+        ${isOpen ? `<span class="live-badge ${e.type}">● مباشر</span>` : ''}
+        <div class="entry-days ${e.type}">${days}</div>
+        ${isOpen ? `<button class="btn-end" onclick="endEntry(${e.id})">إنهاء ✓</button>` : ''}
+        <button class="btn-del" onclick="deleteEntry(${e.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatDate(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return `${d.getDate()} ${MONTHS_AR[d.getMonth()]}`;
+}
+
+render();
+setInterval(render, 60000);
+</script>
+</body>
+</html>
