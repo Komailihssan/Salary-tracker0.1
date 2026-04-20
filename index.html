@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#0F1117"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="مصاريفي"/>
+  <title>مصاريفي 💰</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0F1117;color:#F0F0F0;font-family:'Cairo','Segoe UI',sans-serif;direction:rtl;min-height:100vh;overscroll-behavior:none}
+    #app{max-width:420px;margin:0 auto;min-height:100vh;position:relative}
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:#1A1D26}
+    ::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+    input,select,button{font-family:'Cairo',sans-serif!important;direction:rtl}
+    .fade-in{animation:fadeIn 0.3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .tap-btn{transition:transform 0.1s,opacity 0.1s;cursor:pointer}
+    .tap-btn:active{transform:scale(0.96);opacity:0.85}
+    .hidden{display:none!important}
+    .view{display:none;padding-bottom:100px}
+    .view.active{display:block}
+    #view-add.active,#view-settings.active{padding-bottom:20px}
+    #toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1E2030;border:1px solid #333;color:#fff;padding:10px 24px;border-radius:24px;font-size:14px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.5);display:none}
+    #toast.show{display:block;animation:fadeIn 0.2s ease}
+    #bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:#14161F;border-top:1px solid #2A2D3E;display:flex;justify-content:space-around;padding:12px 0 20px;z-index:100}
+    .nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:#555;font-size:11px;padding:0 20px}
+    .nav-btn.active{color:#5C6EFF}
+    .nav-btn .icon{font-size:22px}
+    #add-fab{display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#5C6EFF,#8B5CF6);border:none;border-radius:50%;width:56px;height:56px;font-size:26px;color:#fff;margin-top:-20px;box-shadow:0 4px 20px rgba(92,110,255,0.5)}
+    .card{background:linear-gradient(135deg,#1E2030,#161824);border-radius:24px;padding:28px;border:1px solid #2A2D3E;margin-bottom:20px}
+    .card2{background:#1E2030;border-radius:16px;padding:14px 16px;border:1px solid #2A2D3E;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+    #ring-progress{transition:stroke-dashoffset 1s ease}
+    #month-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:20px}
+    #month-bar::-webkit-scrollbar{display:none}
+    .month-pill{flex-shrink:0;padding:6px 14px;border-radius:20px;border:none;background:#1E2030;color:#888;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif}
+    .month-pill.active{background:#5C6EFF;color:#fff;font-weight:700}
+    #cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+    .cat-btn{padding:12px 8px;border-radius:14px;border:2px solid #2A2D3E;background:#1E2030;cursor:pointer;font-size:12px;color:#888;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:'Cairo',sans-serif;transition:all 0.15s}
+    .bar-wrap{height:6px;background:#1E2030;border-radius:3px;overflow:hidden;margin-top:4px}
+    .bar-fill{height:100%;border-radius:3px;transition:width 0.6s ease}
+    .inp{width:100%;background:#1E2030;border:1px solid #2A2D3E;border-radius:14px;padding:14px 16px;color:#fff;font-size:14px;outline:none;font-family:'Cairo',sans-serif}
+    .inp-big{font-size:26px;font-weight:900;text-align:center;padding:16px 18px}
+    .back-btn{background:#1E2030;border:1px solid #2A2D3E;border-radius:10px;padding:8px 12px;color:#aaa;cursor:pointer;font-size:16px}
+    .action-btn{width:100%;padding:16px;border:none;border-radius:16px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;margin-top:8px}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="toast"></div>
+
+  <!-- HOME -->
+  <div id="view-home" class="view active fade-in">
+    <div style="padding:32px 24px 20px;background:linear-gradient(160deg,#1A1D2E 0%,#0F1117 100%)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <p id="header-month" style="font-size:13px;color:#888;margin-bottom:2px"></p>
+          <h1 style="font-size:22px;font-weight:900;letter-spacing:-0.5px">مصاريفي 💰</h1>
+        </div>
+        <button class="tap-btn" onclick="showView('settings')" style="background:#1E2030;border:1px solid #2A2D3E;border-radius:12px;padding:8px 14px;color:#aaa;font-size:13px">⚙️ الإعدادات</button>
+      </div>
+    </div>
+    <div style="padding:0 24px">
+      <div class="card" style="display:flex;align-items:center;gap:24px">
+        <div style="position:relative;flex-shrink:0">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="44" fill="none" stroke="#1E2030" stroke-width="10"/>
+            <circle id="ring-progress" cx="55" cy="55" r="44" fill="none" stroke="#00D48B" stroke-width="10"
+              stroke-dasharray="276.46" stroke-dashoffset="276.46"
+              stroke-linecap="round" transform="rotate(-90 55 55)"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span id="pct-label" style="font-size:20px;font-weight:900;color:#00D48B">0%</span>
+            <span style="font-size:10px;color:#666">مُنفق</span>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div style="margin-bottom:14px">
+            <p style="font-size:11px;color:#666;margin-bottom:2px">الراتب</p>
+            <p id="salary-display" style="font-size:22px;font-weight:900;color:#fff">0 <span style="font-size:13px;color:#888">ر.س</span></p>
+          </div>
+          <div style="margin-bottom:14px">
+            <p style="font-size:11px;color:#666;margin-bottom:2px">المصاريف</p>
+            <p id="spent-display" style="font-size:18px;font-weight:700;color:#FF6B6B">0 <span style="font-size:13px;color:#888">ر.س</span></p>
+          </div>
+          <div>
+            <p style="font-size:11px;color:#666;margin-bottom:2px">المتبقي</p>
+            <p id="remain-display" style="font-size:18px;font-weight:700;color:#00D48B">0 <span style="font-size:13px;color:#888">ر.س</span></p>
+          </div>
+        </div>
+      </div>
+      <div id="month-bar"></div>
+      <div id="cat-breakdown"></div>
+      <h3 style="font-size:14px;color:#888;margin-bottom:12px">آخر المصاريف</h3>
+      <div id="recent-list"></div>
+      <button id="see-all-btn" class="tap-btn hidden" onclick="showView('history')" style="width:100%;padding:12px;background:#1E2030;border:1px solid #2A2D3E;border-radius:14px;color:#888;font-size:13px;margin-bottom:20px"></button>
+    </div>
+  </div>
+
+  <!-- ADD -->
+  <div id="view-add" class="view fade-in">
+    <div style="padding:32px 24px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px">
+        <button class="back-btn tap-btn" onclick="showView('home')">←</button>
+        <h2 style="font-size:20px;font-weight:900">إضافة مصروف</h2>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:13px;color:#888;display:block;margin-bottom:8px">المبلغ (ر.س)</label>
+        <input id="inp-amount" type="number" placeholder="0.00" class="inp inp-big"/>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:13px;color:#888;display:block;margin-bottom:8px">الفئة</label>
+        <div id="cat-grid"></div>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:13px;color:#888;display:block;margin-bottom:8px">ملاحظة (اختياري)</label>
+        <input id="inp-note" type="text" placeholder="أضف تفاصيل..." class="inp"/>
+      </div>
+      <div style="margin-bottom:32px">
+        <label style="font-size:13px;color:#888;display:block;margin-bottom:8px">التاريخ</label>
+        <input id="inp-date" type="date" class="inp"/>
+      </div>
+      <button class="tap-btn action-btn" onclick="addExpense()" style="background:linear-gradient(135deg,#5C6EFF,#8B5CF6);box-shadow:0 4px 20px rgba(92,110,255,0.4)">إضافة المصروف</button>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="view-history" class="view fade-in">
+    <div style="padding:32px 24px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
+        <button class="back-btn tap-btn" onclick="showView('home')">←</button>
+        <h2 style="font-size:20px;font-weight:900">جميع المصاريف</h2>
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="view-settings" class="view fade-in">
+    <div style="padding:32px 24px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px">
+        <button class="back-btn tap-btn" onclick="showView('home')">←</button>
+        <h2 style="font-size:20px;font-weight:900">الإعدادات</h2>
+      </div>
+      <div style="background:#1E2030;border-radius:18px;padding:22px;border:1px solid #2A2D3E;margin-bottom:20px">
+        <h3 style="font-size:15px;margin-bottom:16px;color:#ccc">💼 الراتب الشهري</h3>
+        <input id="inp-salary" type="number" placeholder="أدخل راتبك الشهري" class="inp" style="font-size:18px;font-weight:700;text-align:center;margin-bottom:14px;background:#14161F"/>
+        <button class="tap-btn action-btn" onclick="saveSalary()" style="background:linear-gradient(135deg,#00D48B,#00A36C);box-shadow:0 4px 16px rgba(0,212,139,0.3)">حفظ الراتب</button>
+      </div>
+      <div style="background:#1E2030;border-radius:18px;padding:22px;border:1px solid #2A2D3E">
+        <h3 style="font-size:15px;margin-bottom:16px;color:#ccc">🗑️ تنظيف البيانات</h3>
+        <button class="tap-btn action-btn" onclick="clearAll()" style="background:#FF5C5C22;border:1px solid #FF5C5C44;color:#FF5C5C">حذف جميع المصاريف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div id="bottom-nav">
+    <button class="nav-btn tap-btn active" id="nav-home" onclick="showView('home')">
+      <span class="icon">🏠</span><span>الرئيسية</span>
+    </button>
+    <button class="tap-btn" id="add-fab" onclick="showView('add')">+</button>
+    <button class="nav-btn tap-btn" id="nav-history" onclick="showView('history')">
+      <span class="icon">📋</span><span>السجل</span>
+    </button>
+  </div>
+</div>
+
+<script>
+const CATEGORIES=[
+  {id:"food",label:"🍔 طعام",color:"#FF6B6B"},
+  {id:"transport",label:"🚗 مواصلات",color:"#4ECDC4"},
+  {id:"shopping",label:"🛍️ تسوق",color:"#FFE66D"},
+  {id:"bills",label:"💡 فواتير",color:"#A8E6CF"},
+  {id:"health",label:"💊 صحة",color:"#FF8B94"},
+  {id:"entertainment",label:"🎮 ترفيه",color:"#C3A6FF"},
+  {id:"other",label:"📦 أخرى",color:"#B0BEC5"},
+];
+const MONTHS=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const CAT_MAP=Object.fromEntries(CATEGORIES.map(c=>[c.id,c]));
+const CIRC=2*Math.PI*44;
+let salary=Number(localStorage.getItem("salary")||0);
+let expenses=JSON.parse(localStorage.getItem("expenses")||"[]");
+const now=new Date();
+let filterMonth=now.getMonth();
+let filterYear=now.getFullYear();
+let selCategory="food";
+
+function save(){localStorage.setItem("expenses",JSON.stringify(expenses));}
+function fmt(n){return Number(n).toLocaleString("ar-SA",{minimumFractionDigits:0,maximumFractionDigits:0});}
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200);}
+
+function showView(v){
+  document.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
+  document.getElementById("view-"+v).classList.add("active");
+  const nav=document.getElementById("bottom-nav");
+  nav.style.display=["home","history"].includes(v)?"flex":"none";
+  document.getElementById("nav-home").classList.toggle("active",v==="home");
+  document.getElementById("nav-history").classList.toggle("active",v==="history");
+  if(v==="home")renderHome();
+  if(v==="history")renderHistory();
+  if(v==="add")initAddForm();
+  if(v==="settings")document.getElementById("inp-salary").value=salary||"";
+}
+
+function getMonthExp(){return expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===filterMonth&&d.getFullYear()===filterYear;});}
+
+function renderHome(){
+  const me=getMonthExp();
+  const spent=me.reduce((s,e)=>s+e.amount,0);
+  const rem=salary-spent;
+  const pct=salary>0?Math.min((spent/salary)*100,100):0;
+  const col=pct<50?"#00D48B":pct<80?"#FFB347":"#FF5C5C";
+  document.getElementById("header-month").textContent=MONTHS[filterMonth]+" "+filterYear;
+  document.getElementById("salary-display").innerHTML=fmt(salary)+' <span style="font-size:13px;color:#888">ر.س</span>';
+  document.getElementById("spent-display").innerHTML=fmt(spent)+' <span style="font-size:13px;color:#888">ر.س</span>';
+  document.getElementById("remain-display").innerHTML=fmt(Math.abs(rem))+' <span style="font-size:13px;color:#888">ر.س</span>'+(rem<0?' <span style="font-size:11px;color:#FF5C5C">تجاوزت!</span>':"");
+  document.getElementById("remain-display").style.color=rem>=0?"#00D48B":"#FF5C5C";
+  document.getElementById("pct-label").textContent=Math.round(pct)+"%";
+  document.getElementById("pct-label").style.color=col;
+  const ring=document.getElementById("ring-progress");
+  ring.setAttribute("stroke",col);
+  ring.style.filter=`drop-shadow(0 0 6px ${col}88)`;
+  ring.setAttribute("stroke-dashoffset",CIRC*(1-pct/100));
+  document.getElementById("month-bar").innerHTML=MONTHS.map((m,i)=>`<button class="month-pill tap-btn${i===filterMonth?" active":""}" onclick="setMonth(${i})">${m}</button>`).join("");
+  const cats=CATEGORIES.map(c=>({...c,total:me.filter(e=>e.category===c.id).reduce((s,e)=>s+e.amount,0)})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+  document.getElementById("cat-breakdown").innerHTML=cats.length?`<h3 style="font-size:14px;color:#888;margin-bottom:12px">التوزيع حسب الفئة</h3>`+cats.map(c=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:13px">${c.label}</span><span style="font-size:13px;font-weight:700">${fmt(c.total)} ر.س</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${spent>0?(c.total/spent*100):0}%;background:${c.color};box-shadow:0 0 8px ${c.color}66"></div></div></div>`).join(""):"";
+  const rl=document.getElementById("recent-list");
+  const sab=document.getElementById("see-all-btn");
+  if(!me.length){rl.innerHTML=`<div style="text-align:center;padding:40px 0;color:#444"><div style="font-size:40px">🧾</div><p style="font-size:14px;margin-top:8px">لا توجد مصاريف هذا الشهر</p></div>`;sab.classList.add("hidden");}
+  else{rl.innerHTML=me.slice(0,8).map(expCard).join("");if(me.length>8){sab.textContent=`عرض الكل (${me.length})`;sab.classList.remove("hidden");}else sab.classList.add("hidden");}
+}
+
+function renderHistory(){
+  const me=getMonthExp();
+  document.getElementById("history-list").innerHTML=me.length?me.map(expCard).join(""):`<div style="text-align:center;padding:40px 0;color:#444"><div style="font-size:40px">🧾</div><p style="margin-top:8px">لا توجد مصاريف</p></div>`;
+}
+
+function expCard(e){
+  const cat=CAT_MAP[e.category];
+  const icon=cat.label.split(" ")[0];
+  const name=cat.label.split(" ").slice(1).join(" ");
+  return `<div class="card2"><div style="width:42px;height:42px;border-radius:12px;background:${cat.color}22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${icon}</div><div style="flex:1;min-width:0"><p style="font-size:14px;font-weight:600">${name}</p>${e.note?`<p style="font-size:12px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.note}</p>`:""}<p style="font-size:11px;color:#555">${new Date(e.date).toLocaleDateString("ar-SA")}</p></div><div style="text-align:left;flex-shrink:0"><p style="font-size:15px;font-weight:700;color:#FF6B6B">${fmt(e.amount)}</p><p style="font-size:11px;color:#555">ر.س</p></div><button onclick="deleteExp(${e.id})" style="background:none;border:none;color:#444;cursor:pointer;font-size:16px;padding:4px">🗑️</button></div>`;
+}
+
+function setMonth(i){filterMonth=i;renderHome();}
+
+function initAddForm(){
+  document.getElementById("inp-amount").value="";
+  document.getElementById("inp-note").value="";
+  document.getElementById("inp-date").value=now.toISOString().slice(0,10);
+  selCategory="food";
+  document.getElementById("cat-grid").innerHTML=CATEGORIES.map(c=>`<button class="cat-btn tap-btn${c.id===selCategory?" active":""}" style="${c.id===selCategory?`border-color:${c.color};background:${c.color}22;color:${c.color}`:""}}" onclick="selectCat('${c.id}',this,'${c.color}')"><span style="font-size:20px">${c.label.split(" ")[0]}</span><span style="font-size:11px">${c.label.split(" ").slice(1).join(" ")}</span></button>`).join("");
+}
+
+function selectCat(id,btn,color){
+  selCategory=id;
+  document.querySelectorAll(".cat-btn").forEach(b=>{b.style.borderColor="#2A2D3E";b.style.background="#1E2030";b.style.color="#888";});
+  btn.style.borderColor=color;btn.style.background=color+"22";btn.style.color=color;
+}
+
+function addExpense(){
+  const amt=Number(document.getElementById("inp-amount").value);
+  if(!amt||amt<=0){showToast("أدخل مبلغاً صحيحاً");return;}
+  expenses.unshift({id:Date.now(),amount:amt,category:selCategory,note:document.getElementById("inp-note").value,date:document.getElementById("inp-date").value||now.toISOString().slice(0,10)});
+  save();showToast("تمت الإضافة ✓");showView("home");
+}
+
+function deleteExp(id){expenses=expenses.filter(e=>e.id!==id);save();showToast("تم الحذف");renderHome();renderHistory();}
+
+function saveSalary(){
+  const val=Number(document.getElementById("inp-salary").value);
+  if(!val||val<=0){showToast("أدخل راتباً صحيحاً");return;}
+  salary=val;localStorage.setItem("salary",salary);showToast("تم حفظ الراتب ✓");showView("home");
+}
+
+function clearAll(){if(confirm("هل تريد حذف جميع المصاريف؟")){expenses=[];save();showToast("تم الحذف");showView("home");}}
+
+renderHome();
+</script>
+</body>
+</html>
